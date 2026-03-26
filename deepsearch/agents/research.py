@@ -235,8 +235,8 @@ def tavily_search(
         query: str,
         state: Annotated[ResearchState, InjectedState],
         tool_call_id: Annotated[str, InjectedToolCallId],
-        max_results: Annotated[int, InjectedToolArg],
-        topic: Annotated[Literal["general", "news", "finance"], InjectedToolArg] = "general",
+        max_results: Annotated[int, InjectedToolArg] = 1,
+        topic: Literal["general", "news", "finance"] = "general",
 ) -> Command:
     """搜索web内容并存储详细结果到文件，state中存储最小化的上下文
 
@@ -250,11 +250,11 @@ def tavily_search(
     search_results = run_tavily_search(query, max_results, topic)
     processed_results = process_search_results(search_results)
 
-    files = state.get("files", [])
+    new_files = []
     saved_files = []
     summaries = []
 
-    for i, result in enumerate(processed_results):
+    for result in processed_results:
         filename = result['filename']
         file_content = FILE_CONTENT_FORMAT.format(
             title=result['title'],
@@ -264,7 +264,7 @@ def tavily_search(
             summary=result['summary'],
             raw_content=result['raw_content'] if result['raw_content'] else 'No raw content available.',
         )
-        files.append((filename, file_content))
+        new_files.append((filename, file_content))
         saved_files.append(filename)
         summaries.append(f"- {filename}: {result['summary']}...")
 
@@ -277,7 +277,7 @@ Files: {', '.join(saved_files)}
 💡 Use read_file() to access full details when needed."""
 
     return Command(update={
-        "files": files,
+        "files": new_files,
         "messages": [ToolMessage(summary_text, tool_call_id=tool_call_id)],
     })
 

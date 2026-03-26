@@ -4,8 +4,10 @@ from langgraph.graph import StateGraph
 
 from deepsearch.nodes.clarifier import clarifier
 from deepsearch.nodes.orchestrator import orchestrator
+from deepsearch.nodes.researcher import researcher
 from deepsearch.nodes.simple_answer import simple_answer
 from deepsearch.utils.state import ResearchState
+from deepsearch.utils.formatter import format_messages
 
 
 def route_by_action(state: ResearchState) -> str:
@@ -19,6 +21,7 @@ def build_graph():
     graph.add_node("orchestrator", orchestrator)
     graph.add_node("simple_answer", simple_answer)
     graph.add_node("clarify", clarifier)
+    graph.add_node("researcher", researcher)
 
     graph.add_edge(START, "orchestrator")
     graph.add_conditional_edges(
@@ -30,7 +33,8 @@ def build_graph():
         }
     )
     graph.add_edge("simple_answer", END)
-    graph.add_edge("clarify", END)
+    graph.add_edge("clarify", 'researcher')
+    graph.add_edge("researcher", END)
 
     memory = MemorySaver()
     app = graph.compile(checkpointer=memory)
@@ -44,12 +48,11 @@ def test_graph():
     config = {"configurable": {"thread_id": 1}}
     result = app.invoke(init_state, config)
 
-    print(result)
+    format_messages(result["messages"])
 
 
 def test_agent():
     from deepsearch.agents import agent
-    from deepsearch.utils.formatter import format_messages
 
     result = agent.invoke({
         "messages": [{
@@ -61,5 +64,5 @@ def test_agent():
 
 
 if __name__ == '__main__':
-    # test_graph()
-    test_agent()
+    test_graph()
+    # test_agent()

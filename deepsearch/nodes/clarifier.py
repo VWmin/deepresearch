@@ -9,6 +9,6 @@ def clarifier(state: ResearchState) -> ResearchState:
 
     state.update({
         "topic": topic,
-        "next_action": "end"
+        "next_action": "researcher"
     })
     return state

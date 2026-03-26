@@ -3,3 +3,7 @@ langchain-deepseek
 langchain_core
 langchain
 langgraph
+markdownify
+tavily
+httpx
+rich

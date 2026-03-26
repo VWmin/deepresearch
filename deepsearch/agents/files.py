@@ -78,7 +78,7 @@ def read_file(
     if not os.path.exists(file_path):
         return f"Error: File '{filename}' does not exist on disk."
 
-    with open(file_path, "r") as f:
+    with open(file_path, "r", encoding='utf-8') as f:
         content = f.read()
     if not content:
         return "System reminder: File exists but has empty content."

@@ -13,14 +13,19 @@ def _ensure_dir():
 _ensure_dir()
 
 
-def file_reducer(left: list[str], right: list[tuple[str, str]]):
+def file_reducer(left, right):
+    merged = []
     if left is None:
         left = []
     if right is None:
-        return left
-    for filename, content in right:
-        if filename not in left:
-            left.append(filename)
-        with open(os.path.join(STORE_DIR, filename), "w") as f:
-            f.write(content)
-    return left
+        right = []
+    for i in left + right:
+        if isinstance(i, str):
+            merged.append(i)
+        if isinstance(i, tuple):
+            assert len(i) == 2
+            filename, content = i
+            merged.append(filename)
+            with open(os.path.join(STORE_DIR, filename), "w", encoding='utf-8') as f:
+                f.write(content)
+    return merged

@@ -13,7 +13,6 @@ class Todo(TypedDict):
 
 
 class ResearchState(AgentState):
-    """研究助手状态，扩展 AgentState 添加自定义字段"""
 
     # 自定义可选字段
     input: NotRequired[str]
@@ -26,4 +25,4 @@ class ResearchState(AgentState):
     todos: NotRequired[list[Todo]]
     files: NotRequired[Annotated[list[str], file_reducer]]
     web_resources: NotRequired[str]
-    next_action: NotRequired[Literal["simple_answer", "clarify", "end"]]
+    next_action: NotRequired[Literal["simple_answer", "clarify", "researcher", "end"]]

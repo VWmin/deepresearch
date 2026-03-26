@@ -10,14 +10,14 @@ A research assistant system built with LangGraph that processes user requests th
 3. Plans and executes research steps
 4. Generates research reports
 
-**Current implementation status**: orchestrator → simple_answer/clarifier → END. The plan/researcher/reporter nodes are planned but not yet implemented.
+**Current implementation status**: orchestrator → simple_answer/clarifier → researcher → END. The plan/reporter nodes are planned but not yet implemented.
 
 ## Architecture
 
 ```
-orchestrator → clarifier → plan → researcher → reporter
+orchestrator → clarifier → researcher → END
      ↓
-   simple_answer (for simple questions)
+   simple_answer → END
 ```
 
 **Two LangGraph API patterns are used:**
@@ -33,6 +33,7 @@ orchestrator → clarifier → plan → researcher → reporter
 - `deepsearch/agents/research.py` - `tavily_search` tool with `InjectedState` and `Command` for state updates
 - `deepsearch/agents/planer.py` - `write_todos`/`read_todos` tools for task tracking
 - `deepsearch/agents/files.py` - Virtual filesystem tools (`ls`, `read_file`, `write_file`)
+- `deepsearch/nodes/researcher.py` - Node that delegates to the main agent for research execution
 
 **Agent pattern (langchain.agents.create_agent):**
 ```python
@@ -56,6 +57,9 @@ def my_tool(
     return Command(update={"field": value, "messages": [ToolMessage(..., tool_call_id=tool_call_id)]})
 ```
 
+**Sub-agent delegation pattern:**
+The main agent delegates research tasks to isolated sub-agents via the `task` tool. Each sub-agent has its own context and tools. This enables parallel research and prevents context pollution between independent research directions.
+
 **Structured output pattern:**
 ```python
 structured_llm = llm.with_structured_output(PydanticModel)
@@ -65,7 +69,8 @@ result = chain.invoke({"input": state["input"]})
 
 **Routing:**
 - `next_action` field values: `"simple_answer"`, `"clarify"`, `"end"`
-- Currently both `simple_answer` and `clarifier` nodes route directly to END
+- `orchestrator` routes to `simple_answer` or `clarifier` based on request classification
+- `clarifier` routes to `researcher`, which routes to END
 
 ## Environment Setup
 
@@ -96,6 +101,7 @@ python -m deepsearch.subgraph.clarifier  # Clarifier subgraph (interactive, uses
 - `python-dotenv` - Loads `.env` with `load_dotenv(override=True)`
 - `httpx` - HTTP client for fetching web content (use `follow_redirects=True`)
 - `markdownify` - HTML to Markdown conversion
+- `rich` - Terminal output formatting
 
 ## File Storage
 

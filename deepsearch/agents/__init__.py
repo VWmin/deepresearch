@@ -1,7 +1,7 @@
 from typing import TypedDict, NotRequired, Annotated
 
 from langchain.agents import create_agent
-from langchain_core.messages import ToolMessage
+from langchain_core.messages import HumanMessage, ToolMessage
 from langchain_core.tools import BaseTool, tool, InjectedToolCallId
 from langgraph.prebuilt import InjectedState
 from langgraph.types import Command
@@ -121,7 +121,7 @@ def _create_task_tool(tools, subagents: list[SubAgent], model, state_schema):
         subagent = agents_mapping[subagent_name]
 
         # 创建新的上下文
-        state["messages"] = [{"role": "user", "content": description}]
+        state["messages"] = [HumanMessage(content=description)]
 
         # subagent 工作
         result = subagent.invoke(state)
