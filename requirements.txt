@@ -1,0 +1,5 @@
+python-dotenv
+langchain-deepseek
+langchain_core
+langchain
+langgraph
