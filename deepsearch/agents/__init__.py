@@ -5,6 +5,7 @@ from langchain_core.messages import HumanMessage, ToolMessage
 from langchain_core.tools import BaseTool, tool, InjectedToolCallId
 from langgraph.prebuilt import InjectedState
 from langgraph.types import Command
+from langgraph.errors import GraphRecursionError
 
 from deepsearch.agents.files import write_file, read_file, ls, FILE_USAGE_INSTRUCTIONS
 from deepsearch.agents.planer import write_todos, read_todos, TODO_USAGE_INSTRUCTIONS
@@ -123,8 +124,26 @@ def _create_task_tool(tools, subagents: list[SubAgent], model, state_schema):
         # 创建新的上下文
         state["messages"] = [HumanMessage(content=description)]
 
-        # subagent 工作
-        result = subagent.invoke(state)
+        # 使用 stream 模式，逐步收集状态
+        current_state = state.copy()
+        try:
+            for event in subagent.stream(state):
+                # event 结构: {"agent": {"messages": [...], ...}} 或 {"tools": {...}}
+                for node_name, node_state in event.items():
+                    current_state = node_state
+            result = current_state
+        except GraphRecursionError:
+            # 达到递归上限，使用当前上下文生成总结
+            llm = model
+            summary_prompt = """你的研究任务已达到最大迭代次数限制。
+请基于目前收集到的信息，提供一个总结性的回复。
+如果已有部分研究结果，请总结并呈现。
+如果研究未完成，请说明目前进展和发现。"""
+
+            current_messages = current_state.get("messages", [])
+            summary_response = llm.invoke(current_messages + [HumanMessage(content=summary_prompt)])
+            current_state["messages"] = current_messages + [summary_response]
+            result = current_state
 
         return Command(update={
             "files": result.get("files", []),  # Merge any file changes
